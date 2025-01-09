@@ -3,7 +3,7 @@ import datetime
 import inquirer
 import psycopg
 import pytz
-
+from ..concole import console
 # from .utils import *
 
 
@@ -11,12 +11,12 @@ class Base:
     timedelta = datetime.timedelta(days=-5)
 
     def __init__(self, config: dict):
-        self.config = config
-        timestampConfig: dict | None = self.config.get("timestamp", None)
-        if timestampConfig:
-            self.setTimestampConfig(timestampConfig)
-        self.conn = self.connect_db(config)
-        print("Connected")
+        with console.status("Initializing", spinner="dots"):
+            self.config = config
+            timestampConfig: dict | None = self.config.get("timestamp", None)
+            if timestampConfig:
+                self.setTimestampConfig(timestampConfig)
+            self.conn = self.connect_db(config)
 
     def connect_db(self, config) -> psycopg.Connection:
         return psycopg.connect(
