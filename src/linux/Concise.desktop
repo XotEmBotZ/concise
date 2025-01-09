@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Concise
+Exec= /home/xotem/personalProjects/dailyRecords/env/bin/python /home/xotem/personalProjects/dailyRecords/dailyRunner.py
+Type=Application
+Terminal=true
+Categories=Application;
+Icon=/home/xotem/personalProjects/dailyRecords/assets/icon.svg
+Comment=Command Line Journaling and Goal tracking
+
+Actions=Configure;
