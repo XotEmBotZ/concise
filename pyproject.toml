@@ -1,18 +1,31 @@
 [project]
 name = "concise"
 version = "0.0.1"
+description = "A terminal journal and goal app"
 authors = [
-  { name="XotEmBotZ", email="xotembotzop@gmail.com" },
+    {name = "XotEmBotZ",email = "xotembotzop@gmail.com"}
 ]
-description = "A command line jounal and goal tracking application"
+license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 
+requires-python = ">=3.13"
+dependencies = [
+    "psycopg (>=3.2.3,<4.0.0)"
+]
+
+
 [project.urls]
 Homepage = "https://github.com/XotEmBotZ/concise"
 Issues = "https://github.com/XotEmBotZ/concise/issues"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
