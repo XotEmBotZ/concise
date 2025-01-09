@@ -1,0 +1,18 @@
+[project]
+name = "concise"
+version = "0.0.1"
+authors = [
+  { name="XotEmBotZ", email="xotembotzop@gmail.com" },
+]
+description = "A command line jounal and goal tracking application"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/XotEmBotZ/concise"
+Issues = "https://github.com/XotEmBotZ/concise/issues"
