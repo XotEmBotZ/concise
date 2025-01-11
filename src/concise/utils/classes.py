@@ -1,5 +1,6 @@
 import datetime
 import time
+from typing import TypeAlias, Union
 
 import psycopg
 import pytz
@@ -14,14 +15,22 @@ from textual.widgets import (
     TabbedContent,
     TabPane,
 )
+from textual.containers import (
+    Middle,
+    Center,
+    Container,
+)
 
 from .utils import dump_config, load_config
+from .widgets import TextInput
+
+TomlType: TypeAlias = dict[str, dict[str, Union[int, float, str, "TomlType"]]]
 
 
 class Base(Static):
     timedelta = datetime.timedelta(days=-5)
     conn: reactive[psycopg.Connection | None] = reactive(None, repaint=True)
-    config = reactive({})
+    config: reactive[TomlType] = reactive({})
 
     def __init__(self, filename: str):
         super().__init__()
@@ -35,12 +44,12 @@ class Base(Static):
         timestampConfig: dict | None = self.config.get("timestamp", None)
         if timestampConfig:
             self.setTimestampConfig(timestampConfig)
-        self.conn = self.connect_db(self.config)
+        self.conn = self.connect_db()
         self.loading = False
 
-    def connect_db(self, config) -> psycopg.Connection:
+    def connect_db(self) -> psycopg.Connection:
         return psycopg.connect(
-            f"postgresql://{config['database']['user']}:{config['database']['passwd']}@{config['database']['host']}:{config['database']['port']}/{config['database']['db']}"
+            self.config.get("database").get("url")  # type: ignore
         )
 
     def setTimestampConfig(self, config: dict) -> None:
@@ -61,8 +70,47 @@ class Settings(Static):
         self.config = config
 
     def compose(self):
-        yield Label("Host")
-        yield Input()
+        dbStrInput = Container(id="DbContainer")
+        dbStrInput.border_title = "Database"
+        with dbStrInput:
+            yield TextInput(
+                placeholder=r"<db>://<username>:<password>@<host>:<port>/<database>",
+                id="dbStr",
+                lable="Database String",
+                value=self.config.get("database", {}).get("url", None),
+            )
+        timedeltaContainer = Container(id="timedeltaContainer")
+        timedeltaContainer.border_title = "Timedelta"
+        with timedeltaContainer:
+            yield TextInput(
+                type="integer",
+                placeholder=r"days",
+                id="days",
+                lable="Days",
+                value=str(
+                    self.config.get("timestamp", {}).get("delta", {}).get("days", None)
+                ),
+            )
+            yield TextInput(
+                type="integer",
+                placeholder=r"hours",
+                id="hours",
+                lable="Hours",
+                value=str(
+                    self.config.get("timestamp", {}).get("delta", {}).get("hours", None)
+                ),
+            )
+            yield TextInput(
+                type="integer",
+                placeholder=r"minutes",
+                id="minutes",
+                lable="Minutes",
+                value=str(
+                    self.config.get("timestamp", {})
+                    .get("delta", {})
+                    .get("minutes", None)
+                ),
+            )
 
 
 class Main(Base):
