@@ -12,7 +12,11 @@ from textual.widgets import (
     Static,
     TabbedContent,
     TabPane,
+    Input,
 )
+from textual import on
+
+from textual.message import Message
 
 from .utils import load_config
 from .widgets import TextInput
@@ -22,8 +26,8 @@ TomlType: TypeAlias = dict[str, dict[str, Union[int, float, str, "TomlType"]]]
 
 class Base(Static):
     timedelta = datetime.timedelta(days=-5)
-    conn: reactive[psycopg.Connection | None] = reactive(None, repaint=True)
-    config: reactive[TomlType] = reactive({})
+    conn: reactive[psycopg.Connection | None] = reactive(None)
+    config: reactive[TomlType] = reactive({}, recompose=True)
 
     def __init__(self, filename: str):
         super().__init__()
@@ -56,13 +60,19 @@ class Base(Static):
 
 
 class Settings(Static):
-    config = reactive({})
+    config: reactive[dict] = reactive({})
+
+    class ConfigChanged(Message):
+        def __init__(self, config: TomlType):
+            self.config = config
+            super().__init__()
 
     def __init__(self, config):
         super().__init__()
         self.config = config
 
     def compose(self):
+        self.log("In Compose")
         dbStrInput = Container(id="DbContainer")
         dbStrInput.border_title = "Database"
         with dbStrInput:
@@ -105,10 +115,28 @@ class Settings(Static):
                 ),
             )
         yield Center(
-            Button("Save", variant="success"),
-            Button("Reset", variant="error"),
+            Button("Save", variant="success", id="save"),
+            Button("Reset", variant="error", id="reset"),
             id="submitBtnGrp",
         )
+
+    @on(Button.Pressed, "#reset")
+    async def handle_text_input_reset(self, event):
+        await self.recompose()
+
+    @on(Button.Pressed, "#save")
+    def handle_text_input_save(self, event):
+        self.config.update(database={"url": self.query_one("#dbStr", Input).value})
+        self.config.update(
+            timestamp={
+                "delta": {
+                    "days": int(self.query_one("#days", Input).value),
+                    "hours": int(self.query_one("#hours", Input).value),
+                    "minutes": int(self.query_one("#minutes", Input).value),
+                }
+            }
+        )
+        self.post_message(self.ConfigChanged(self.config))
 
 
 class Main(Base):
@@ -122,8 +150,17 @@ class Main(Base):
                 "Settings",
                 Settings(self.config),
                 id="settingsTab",
-            )
+            ),
         )
+        self.log(Settings.ConfigChanged.handler_name)
+
+    def on_settings_config_changed(self, event: Settings.ConfigChanged):
+        self.config = event.config
+        # self.mutate_reactive(Main.config)
+
+    def watch_config(self, old_config, new_config):
+        self.log(old_config)
+        self.log(new_config)
 
 
 # class Main(Base):

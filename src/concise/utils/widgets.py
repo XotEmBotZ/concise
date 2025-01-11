@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Any, Generator, Iterable
 
 from rich.console import RenderableType
 from rich.highlighter import Highlighter
@@ -14,6 +14,10 @@ class TextInput(Static):
     BINDINGS = [
         Binding("escape", "escape", "Escape"),
     ]
+
+    class Changed(Input.Changed): ...
+
+    class Submitted(Input.Submitted): ...
 
     def __init__(
         self,
@@ -64,7 +68,7 @@ class TextInput(Static):
         }
         """
 
-    def compose(self):
+    def compose(self) -> Generator[Input, Any, None]:
         self.container = Container(
             id="cont_" + self.cust_id if self.cust_id else None,
             name="cont_" + self.cust_name if self.cust_name else None,
@@ -95,6 +99,6 @@ class TextInput(Static):
                 tooltip=self.cust_tooltip,
             )
 
-    def action_escape(self):
+    def action_escape(self) -> None:
         self.log(f"SOMETHING HERE=>{self.app.query_one(TabPane)}")
         self.app.set_focus(self.app.query_one(Button))
