@@ -55,12 +55,12 @@ class Main(Base):
     def __init__(self, filename: str) -> None:
         super().__init__()
         self.config = load_config(filename)
-        timestampConfig: dict | None = self.config.get("timestamp", None)
+        timestampConfig: dict | None = self.config.get("timestamp", {})
         if timestampConfig:
-            self.setTimestampConfig()
+            self.set_timestamp_config(timestampConfig)
 
-    def setTimestampConfig(self) -> None:
-        delta = self.config.get("timestamp", {}).get("delta", None)
+    def set_timestamp_config(self, config: dict) -> None:
+        delta = config.get("delta", None)
         if delta:
             self.timedelta = datetime.timedelta(**delta)
 
@@ -94,6 +94,8 @@ class Main(Base):
                 title="Database connection",
                 timeout=5,
             )
+        timestampConfig = new_config.get("timestamp", {})
+        self.set_timestamp_config(timestampConfig)
 
 
 class MainApp(App):
