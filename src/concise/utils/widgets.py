@@ -6,13 +6,13 @@ from textual.binding import Binding
 from textual.containers import Container
 from textual.suggester import Suggester
 from textual.validation import Validator
-from textual.widgets import Input, Static
+from textual.widgets import Input, Static, TabPane, Button
 from textual.widgets._input import InputType, InputValidationOn
 
 
 class TextInput(Static):
     BINDINGS = [
-        Binding("escape", "blur", "Blur"),
+        Binding("escape", "escape", "Escape"),
     ]
 
     def __init__(
@@ -95,5 +95,6 @@ class TextInput(Static):
                 tooltip=self.cust_tooltip,
             )
 
-    def action_blur(self):
-        self.blur()
+    def action_escape(self):
+        self.log(f"SOMETHING HERE=>{self.app.query_one(TabPane)}")
+        self.app.set_focus(self.app.query_one(Button))

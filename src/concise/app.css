@@ -1,13 +1,14 @@
-#asd {
-    padding: 1;
-    align-horizontal: center;
-    text-align: center;
-    border: solid blue;
-}
-
 #DbContainer,
 #timedeltaContainer {
     border: solid $accent;
     border-title-align: left;
     height: auto;
+}
+
+#submitBtnGrp {
+    layout: horizontal;
+}
+
+#submitBtnGrp Button {
+    margin: 1;
 }

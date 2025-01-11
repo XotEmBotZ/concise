@@ -1,27 +1,20 @@
 import datetime
-import time
 from typing import TypeAlias, Union
 
 import psycopg
-import pytz
-from textual import on
+from textual.containers import (
+    Center,
+    Container,
+)
 from textual.reactive import reactive
 from textual.widgets import (
     Button,
-    Label,
-    Pretty,
-    Input,
     Static,
     TabbedContent,
     TabPane,
 )
-from textual.containers import (
-    Middle,
-    Center,
-    Container,
-)
 
-from .utils import dump_config, load_config
+from .utils import load_config
 from .widgets import TextInput
 
 TomlType: TypeAlias = dict[str, dict[str, Union[int, float, str, "TomlType"]]]
@@ -111,6 +104,11 @@ class Settings(Static):
                     .get("minutes", None)
                 ),
             )
+        yield Center(
+            Button("Save", variant="success"),
+            Button("Reset", variant="error"),
+            id="submitBtnGrp",
+        )
 
 
 class Main(Base):
