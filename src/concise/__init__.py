@@ -1,3 +1,3 @@
-from .app import Main
+from .app import MainApp
 
-app = Main
+app = MainApp

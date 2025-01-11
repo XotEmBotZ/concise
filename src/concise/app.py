@@ -5,11 +5,10 @@ from textual.binding import Binding
 from textual.widget import Widget
 from textual.widgets import Footer, Header
 
-from .utils.classes import Base
-from .utils.utils import load_config
+from .utils.classes import Main
 
 
-class Main(App):
+class MainApp(App):
     CSS_PATH = "app.css"
     TITLE = "Concise"
     SUB_TITLE = "Terminal Based Journaling and goal tracking"
@@ -21,5 +20,5 @@ class Main(App):
 
     def compose(self) -> Iterable[Widget]:
         yield Header(name="Concise", show_clock=True)
-        yield Base(config=load_config("config.toml"))
+        yield Main(filename="config.toml")
         yield Footer()
