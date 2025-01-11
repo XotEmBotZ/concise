@@ -1,22 +1,21 @@
 import datetime
-from typing import TypeAlias, Union
+from typing import Literal, TypeAlias, Union
 
 import psycopg
+from textual import on
 from textual.containers import (
     Center,
     Container,
 )
+from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import (
     Button,
+    Input,
     Static,
     TabbedContent,
     TabPane,
-    Input,
 )
-from textual import on
-
-from textual.message import Message
 
 from .utils import load_config
 from .widgets import TextInput
@@ -25,22 +24,18 @@ TomlType: TypeAlias = dict[str, dict[str, Union[int, float, str, "TomlType"]]]
 
 
 class Base(Static):
-    timedelta = datetime.timedelta(days=-5)
     conn: reactive[psycopg.Connection | None] = reactive(None)
-    config: reactive[TomlType] = reactive({}, recompose=True)
 
-    def __init__(self, filename: str):
+    def __init__(self):
         super().__init__()
         self.loading = True
-        self.config = load_config(filename)
 
     def on_mount(self):
-        self.call_after_refresh(self.init)
+        # self.call_after_refresh(self.init)
+        ...
 
-    def init(self):
-        timestampConfig: dict | None = self.config.get("timestamp", None)
-        if timestampConfig:
-            self.setTimestampConfig(timestampConfig)
+    def db_init(self):
+        self.loading = True
         self.conn = self.connect_db()
         self.loading = False
 
@@ -49,10 +44,11 @@ class Base(Static):
             self.config.get("database").get("url")  # type: ignore
         )
 
-    def setTimestampConfig(self, config: dict) -> None:
-        delta = config.get("delta", None)
-        if delta:
-            self.timedelta = datetime.timedelta(**delta)
+    def get_conn_url(self) -> str | Literal[False]:
+        if not self.conn:
+            return False
+        connInfo = self.conn.info
+        return f"postgresql://{connInfo.user}:{connInfo.password}@{connInfo.host}:{connInfo.port}/{connInfo.dbname}"
 
     def __del__(self):
         if self.conn and not self.conn.closed:
@@ -140,27 +136,51 @@ class Settings(Static):
 
 
 class Main(Base):
+    timedelta = datetime.timedelta(days=-5)
+    config: reactive[dict] = reactive({}, recompose=True)
+
+    def __init__(self, filename: str) -> None:
+        super().__init__()
+        self.config = load_config(filename)
+        timestampConfig: dict | None = self.config.get("timestamp", None)
+        if timestampConfig:
+            self.setTimestampConfig()
+
+    def setTimestampConfig(self) -> None:
+        delta = self.config.get("timestamp", {}).get("delta", None)
+        if delta:
+            self.timedelta = datetime.timedelta(**delta)
+
     def compose(self):
         self.tabs = TabbedContent()
-        yield self.tabs
-
-    def on_mount(self):
-        self.tabs.add_pane(
-            TabPane(
+        with self.tabs:
+            yield TabPane(
+                "Goal",
+                Settings(self.config),
+                id="goalTab",
+            )
+            yield TabPane(
                 "Settings",
                 Settings(self.config),
                 id="settingsTab",
-            ),
-        )
+            )
+
+    def on_mount(self):
         self.log(Settings.ConfigChanged.handler_name)
 
     def on_settings_config_changed(self, event: Settings.ConfigChanged):
         self.config = event.config
-        # self.mutate_reactive(Main.config)
+        self.mutate_reactive(Main.config)
 
     def watch_config(self, old_config, new_config):
-        self.log(old_config)
-        self.log(new_config)
+        url: str = new_config.get("database", {}).get("url", "")
+        if url != self.get_conn_url() and url:
+            self.call_after_refresh(self.db_init)
+            self.notify(
+                "Database connection activated",
+                title="Database connection",
+                timeout=5,
+            )
 
 
 # class Main(Base):
