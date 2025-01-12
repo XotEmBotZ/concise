@@ -9,6 +9,8 @@ from textual.widgets import (
     Button,
     Input,
     Static,
+    TabbedContent,
+    TabPane,
 )
 
 from ..utils.types import TomlType
@@ -16,6 +18,16 @@ from ..utils.widgets import TextInput
 
 
 class Settings(Static):
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+
+    def compose(self):
+        with TabbedContent():
+            yield TabPane("General", GeneralSetting(self.config))
+
+
+class GeneralSetting(Static):
     config: reactive[dict] = reactive({})
 
     class ConfigChanged(Message):

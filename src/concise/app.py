@@ -16,6 +16,8 @@ from textual.widgets import (
     TabPane,
 )
 
+from concise.panes.settings import GeneralSetting
+
 from .utils.utils import dump_config, load_config
 from .panes import Settings
 
@@ -80,13 +82,14 @@ class Main(Base):
             )
 
     def on_mount(self):
-        self.log(Settings.ConfigChanged.handler_name)
+        self.log(GeneralSetting.ConfigChanged.handler_name)
 
-    def on_settings_config_changed(self, event: Settings.ConfigChanged):
+    def on_general_setting_config_changed(self, event: GeneralSetting.ConfigChanged):
         self.config = event.config
         self.mutate_reactive(Main.config)
 
     def watch_config(self, old_config, new_config):
+        self.log(old_config)
         dump_config(new_config, self.filename)
         url: str = new_config.get("database", {}).get("url", "")
         if url != self.get_conn_url() and url:
