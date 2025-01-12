@@ -23,7 +23,7 @@ from .panes import Settings
 
 
 class Base(Static):
-    conn: reactive[psycopg.Connection | None] = reactive(None)
+    conn: reactive[psycopg.Connection | None] = reactive(None, recompose=True)
 
     def __init__(self):
         super().__init__()
@@ -72,12 +72,12 @@ class Main(Base):
         with self.tabs:
             yield TabPane(
                 "Goal",
-                Settings(self.config),
+                Settings(self.config, self.conn),
                 id="goalTab",
             )
             yield TabPane(
                 "Settings",
-                Settings(self.config),
+                Settings(self.config, self.conn),
                 id="settingsTab",
             )
 

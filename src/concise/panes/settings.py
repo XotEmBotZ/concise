@@ -1,3 +1,4 @@
+import psycopg
 from textual import on
 from textual.containers import (
     Center,
@@ -14,17 +15,28 @@ from textual.widgets import (
 )
 
 from ..utils.types import TomlType
-from ..utils.widgets import TextInput
+from ..utils.widgets import TextInput, GoalEnable
 
 
 class Settings(Static):
-    def __init__(self, config):
+    def __init__(self, config: dict, conn: psycopg.Connection | None):
         super().__init__()
         self.config = config
+        self.conn = conn
 
     def compose(self):
         with TabbedContent():
+            yield TabPane("Goal", GoalSetting(self.conn))
             yield TabPane("General", GeneralSetting(self.config))
+
+
+class GoalSetting(Static):
+    def __init__(self, conn: psycopg.Connection | None):
+        super().__init__()
+        self.conn = conn
+
+    def compose(self):
+        yield GoalEnable(self.conn)
 
 
 class GeneralSetting(Static):

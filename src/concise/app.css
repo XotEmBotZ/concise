@@ -12,3 +12,20 @@
 #submitBtnGrp Button {
     margin: 1;
 }
+
+#goalSettingEnable {
+    border: solid $secondary;
+    height: auto;
+    padding: 1;
+}
+
+#goalEnableBtn {
+    layout: horizontal;
+    align: center middle;
+    height: auto;
+    margin: 1;
+}
+
+#goalEnableBtn Button {
+    margin: 0 1;
+}

@@ -1,12 +1,14 @@
 from typing import Any, Generator, Iterable
 
+import psycopg
 from rich.console import RenderableType
 from rich.highlighter import Highlighter
 from textual.binding import Binding
 from textual.containers import Container
 from textual.suggester import Suggester
 from textual.validation import Validator
-from textual.widgets import Input, Static, TabPane, Button
+from textual.widgets import Input, Static, TabPane, Button, SelectionList, Pretty
+from textual.widgets.selection_list import Selection
 from textual.widgets._input import InputType, InputValidationOn
 
 
@@ -102,3 +104,53 @@ class TextInput(Static):
     def action_escape(self) -> None:
         self.log(f"SOMETHING HERE=>{self.app.query_one(TabPane)}")
         self.app.set_focus(self.app.query_one(Button))
+
+
+class GoalEnable(Static):
+    def __init__(self, conn: psycopg.Connection | None):
+        super().__init__()
+        self.conn = conn
+
+    def fetch_goals(self) -> list[Any | tuple[int, str, bool]]:
+        if not self.conn:
+            return []
+        return self.conn.execute("SELECT id,name,is_enabled FROM goal_info").fetchall()
+
+    def set_enabled_goals(self, goals: tuple[tuple[int]]):
+        if not self.conn:
+            return
+        self.cur = self.conn.cursor()
+        self.cur.execute("UPDATE goal_info SET is_enabled=False;")
+        self.cur.executemany(
+            "UPDATE goal_info SET is_enabled=TRUE where id=%s",
+            goals,
+        )
+        self.conn.commit()
+        self.cur.close()
+
+    def compose(self):
+        goalEnableContainer = Container(id="goalSettingEnable")
+        goalEnableContainer.border_title = "Enabled Goals"
+
+        self.selectionList = SelectionList(
+            *[Selection(goal[1], goal[0], goal[2]) for goal in self.fetch_goals()],
+            id="goalEnableList",
+        )
+        self.selectionList.border_title = "Select which goals to enable."
+
+        with goalEnableContainer:
+            yield self.selectionList
+            yield Container(
+                Button("Save Enabled Goals", id="saveEnabledGoals", variant="success"),
+                Button("Reset Enabled Goals", id="resetEnabledGoals", variant="error"),
+                id="goalEnableBtn",
+            )
+
+    async def on_button_pressed(self, event: Button.Pressed):
+        if event.button.id == "saveEnabledGoals":
+            enabledGoals: tuple[tuple[int]] = (
+                (goal,) for goal in self.selectionList.selected
+            )  # type: ignore
+            self.set_enabled_goals(enabledGoals)
+        elif event.button.id == "resetEnabledGoals":
+            await self.recompose()
