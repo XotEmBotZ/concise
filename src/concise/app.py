@@ -16,7 +16,7 @@ from textual.widgets import (
     TabPane,
 )
 
-from .utils.utils import load_config
+from .utils.utils import dump_config, load_config
 from .panes import Settings
 
 
@@ -54,6 +54,7 @@ class Main(Base):
 
     def __init__(self, filename: str) -> None:
         super().__init__()
+        self.filename: str = filename
         self.config = load_config(filename)
         timestampConfig: dict | None = self.config.get("timestamp", {})
         if timestampConfig:
@@ -86,6 +87,7 @@ class Main(Base):
         self.mutate_reactive(Main.config)
 
     def watch_config(self, old_config, new_config):
+        dump_config(new_config, self.filename)
         url: str = new_config.get("database", {}).get("url", "")
         if url != self.get_conn_url() and url:
             self.call_after_refresh(self.db_init)
