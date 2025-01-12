@@ -140,17 +140,9 @@ class GoalEnable(Static):
 
         with goalEnableContainer:
             yield self.selectionList
-            yield Container(
-                Button("Save Enabled Goals", id="saveEnabledGoals", variant="success"),
-                Button("Reset Enabled Goals", id="resetEnabledGoals", variant="error"),
-                id="goalEnableBtn",
-            )
 
-    async def on_button_pressed(self, event: Button.Pressed):
-        if event.button.id == "saveEnabledGoals":
-            enabledGoals: tuple[tuple[int]] = (
-                (goal,) for goal in self.selectionList.selected
-            )  # type: ignore
-            self.set_enabled_goals(enabledGoals)
-        elif event.button.id == "resetEnabledGoals":
-            await self.recompose()
+    def on_selection_list_selected_changed(self, event: SelectionList.SelectedChanged):
+        enabledGoals: tuple[tuple[int]] = (
+            (goal,) for goal in self.selectionList.selected
+        )  # type: ignore
+        self.set_enabled_goals(enabledGoals)
