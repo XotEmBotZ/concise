@@ -21,6 +21,13 @@ from textual.widgets._input import InputType, InputValidationOn
 from textual.widgets.selection_list import Selection
 
 
+class EscapeInput(Input):
+    BINDINGS = [Binding("escape", "escape", "Focus Next")]
+
+    def action_escape(self):
+        self.screen.focus_next()
+
+
 class TextInput(Static):
     BINDINGS = [
         Binding("escape", "escape", "Escape"),
@@ -153,8 +160,22 @@ class GoalEnable(Static):
         self.set_enabled_goals(enabledGoals)
 
 
+class SubmitBtn(Button): ...
+
+
+class BackBtn(Button): ...
+
+
 class GoalEdit(Static):
     goal: reactive[list[tuple[str, int]]] = reactive(list(tuple()))
+
+    BINDINGS = [
+        Binding("a", "add", "Add Goal"),
+        Binding("u", "update", "Update Goal"),
+        Binding("r", "remove", "Remove Goal"),
+        Binding("s", "confirm", "Confirm"),
+        Binding("b", "back", "Back"),
+    ]
 
     class Updated(Message): ...
 
@@ -176,29 +197,31 @@ class GoalEdit(Static):
             with Container(id="goalEditBtn"):
                 yield Button("Add Goal", variant="success", id="goalEditActionAdd")
                 yield Button(
-                    "Update Goal", variant="primary", id="goalEditActionUpdate"
+                    "Update Goal",
+                    variant="primary",
+                    id="goalEditActionUpdate",
                 )
                 yield Button("Remove Goal", variant="error", id="goalEditActionDelete")
             with Container(id="goalEditInp"):
-                yield Input(placeholder="Name")
-                yield Button("Add", id="goalEditInpAct", variant="success")
-                yield Button("Back", id="goalEditInpBack", variant="error")
+                yield EscapeInput(placeholder="Name")
+                yield SubmitBtn("Add", id="goalEditInpAct", variant="success")
+                yield BackBtn("Back", id="goalEditInpBack", variant="error")
             with Container(id="goalEditDel"):
                 yield Select(
                     self.goal,  # type: ignore
                     prompt="Select Goal",
                 )
-                yield Button("Delete Goal", variant="error", id="goalEditDelBtn")
-                yield Button("Back", id="goalEditDelBack")
+                yield SubmitBtn("Delete Goal", variant="error", id="goalEditDelBtn")
+                yield BackBtn("Back", id="goalEditDelBack")
             with Container(id="goalEditUpd"):
                 yield Select(
                     self.goal,  # type: ignore
                     prompt="Select Goal",
                     id="goalEditUpdSel",
                 )
-                yield Input(id="goalEditUptInp", placeholder="Name")
-                yield Button("Update", variant="primary", id="goalEditUptBtn")
-                yield Button("Back", id="goalEditUpdBack")
+                yield EscapeInput(id="goalEditUptInp", placeholder="Name")
+                yield SubmitBtn("Update", variant="primary", id="goalEditUptBtn")
+                yield BackBtn("Back", id="goalEditUpdBack")
 
     def set_goal_inp(self):
         self.contentSwitcher.current = "goalEditInp"
@@ -242,7 +265,29 @@ class GoalEdit(Static):
                 goalName for goalName, id in self.goal if id == event.select.value
             ][0]
 
+    def action_add(self):
+        self.query_one("#goalEditActionAdd", Button).press()
+
+    def action_update(self):
+        self.query_one("#goalEditActionUpdate", Button).press()
+
+    def action_remove(self):
+        self.query_one("#goalEditActionDelete", Button).press()
+
+    def action_confirm(self):
+        self.query_one(f"#{self.contentSwitcher.current} SubmitBtn", SubmitBtn).press()
+
+    def action_back(self):
+        self.query_one(f"#{self.contentSwitcher.current} BackBtn", BackBtn).press()
+
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if action == "add" or action == "update" or action == "remove":
+            return self.contentSwitcher.current == "goalEditBtn"
+        else:
+            return not self.contentSwitcher.current == "goalEditBtn"
+
     async def on_button_pressed(self, event: Button.Pressed):
+        self.log(event.button.id)
         if event.button.id == "goalEditActionAdd":
             self.set_goal_inp()
         elif event.button.id == "goalEditActionUpdate":
@@ -298,3 +343,4 @@ class GoalEdit(Static):
         ):
             self.contentSwitcher.current = "goalEditBtn"
             self.app.set_focus(self.query_one("#goalEditBtn Button"))
+        self.refresh_bindings()
