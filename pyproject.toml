@@ -18,8 +18,7 @@ dependencies = [
     "psycopg (>=3.2.3,<4.0.0)",
     "pytz (>=2024.2,<2025.0)",
     "textual (>=1.0.0)",
-    "textual-dev (>=1.7.0)",
-    "toml (>=0.10.2,<0.11.0)"
+    "toml (>=0.10.2,<0.11.0)",
 ]
 
 
@@ -33,3 +32,6 @@ build-backend = "poetry.core.masonry.api"
 
 # [tool.poetry]
 # package-mode = false
+[tool.poetry.group.dev.dependencies]
+textual-dev = "^1.7.0"
+
