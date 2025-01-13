@@ -40,7 +40,6 @@ class GoalSetting(Static):
         yield GoalEdit(self.conn)
 
     async def on_goal_edit_updated(self, event: GoalEdit.Updated):
-        self.log("IN UPDATE:" * 40)
         await self.query_one("GoalEnable").recompose()
 
 
@@ -57,7 +56,6 @@ class GeneralSetting(Static):
         self.config = config
 
     def compose(self):
-        self.log("In Compose")
         dbStrInput = Container(id="DbContainer")
         dbStrInput.border_title = "Database"
         with dbStrInput:

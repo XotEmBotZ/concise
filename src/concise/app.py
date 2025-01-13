@@ -1,16 +1,14 @@
-from typing import Iterable
-
-from textual.app import App
-from textual.binding import Binding
-from textual.widget import Widget
-from textual.widgets import Footer, Header
-
 import datetime
-from typing import Literal
+from typing import Iterable, Literal
 
 import psycopg
+from textual.app import App
+from textual.binding import Binding
 from textual.reactive import reactive
+from textual.widget import Widget
 from textual.widgets import (
+    Footer,
+    Header,
     Static,
     TabbedContent,
     TabPane,
@@ -18,8 +16,8 @@ from textual.widgets import (
 
 from concise.panes.settings import GeneralSetting
 
-from .utils.utils import dump_config, load_config
 from .panes import Settings
+from .utils.utils import dump_config, load_config
 
 
 class Base(Static):
@@ -75,9 +73,6 @@ class Main(Base):
                 Settings(self.config, self.conn),
                 id="settingsTab",
             )
-
-    def on_mount(self):
-        self.log(GeneralSetting.ConfigChanged.handler_name)
 
     def on_general_setting_config_changed(self, event: GeneralSetting.ConfigChanged):
         self.config = event.config

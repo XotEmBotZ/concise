@@ -1,25 +1,24 @@
-from typing import Any, Generator, Iterable, Literal
+from typing import Any, Generator, Iterable
 
 import psycopg
 from rich.console import RenderableType
 from rich.highlighter import Highlighter
 from textual.binding import Binding
-from textual.containers import Container, Vertical
+from textual.containers import Container
+from textual.message import Message
+from textual.reactive import reactive
 from textual.suggester import Suggester
 from textual.validation import Validator
 from textual.widgets import (
-    Input,
-    Static,
-    TabPane,
     Button,
-    SelectionList,
-    Select,
     ContentSwitcher,
+    Input,
+    Select,
+    SelectionList,
+    Static,
 )
-from textual.reactive import reactive
-from textual.message import Message
-from textual.widgets.selection_list import Selection
 from textual.widgets._input import InputType, InputValidationOn
+from textual.widgets.selection_list import Selection
 
 
 class TextInput(Static):
@@ -112,7 +111,6 @@ class TextInput(Static):
             )
 
     def action_escape(self) -> None:
-        self.log(f"SOMETHING HERE=>{self.app.query_one(TabPane)}")
         self.app.set_focus(self.app.query_one(Button))
 
 
@@ -234,6 +232,7 @@ class GoalEdit(Static):
             self.set_goal_inp()
         elif event.button.id == "goalEditActionUpdate":
             self.contentSwitcher.current = "goalEditUpd"
+            self.app.set_focus(self.query_one("#goalEditUpd Select"))
         elif event.button.id == "goalEditActionDelete":
             self.contentSwitcher.current = "goalEditDel"
             self.app.set_focus(self.query_one("#goalEditDel Select"))
