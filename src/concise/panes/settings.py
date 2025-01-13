@@ -15,7 +15,7 @@ from textual.widgets import (
 )
 
 from ..utils.types import TomlType
-from ..utils.widgets import TextInput, GoalEnable
+from ..utils.widgets import GoalEdit, TextInput, GoalEnable
 
 
 class Settings(Static):
@@ -37,6 +37,11 @@ class GoalSetting(Static):
 
     def compose(self):
         yield GoalEnable(self.conn)
+        yield GoalEdit(self.conn)
+
+    async def on_goal_edit_updated(self, event: GoalEdit.Updated):
+        self.log("IN UPDATE:" * 40)
+        await self.query_one("GoalEnable").recompose()
 
 
 class GeneralSetting(Static):

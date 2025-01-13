@@ -1,13 +1,23 @@
-from typing import Any, Generator, Iterable
+from typing import Any, Generator, Iterable, Literal
 
 import psycopg
 from rich.console import RenderableType
 from rich.highlighter import Highlighter
 from textual.binding import Binding
-from textual.containers import Container
+from textual.containers import Container, Vertical
 from textual.suggester import Suggester
 from textual.validation import Validator
-from textual.widgets import Input, Static, TabPane, Button, SelectionList, Pretty
+from textual.widgets import (
+    Input,
+    Static,
+    TabPane,
+    Button,
+    SelectionList,
+    Select,
+    ContentSwitcher,
+)
+from textual.reactive import reactive
+from textual.message import Message
 from textual.widgets.selection_list import Selection
 from textual.widgets._input import InputType, InputValidationOn
 
@@ -110,6 +120,8 @@ class GoalEnable(Static):
     def __init__(self, conn: psycopg.Connection | None):
         super().__init__()
         self.conn = conn
+        self.id = "goalSettingEnable"
+        self.border_title = "Enabled Goals"
 
     def fetch_goals(self) -> list[Any | tuple[int, str, bool]]:
         if not self.conn:
@@ -129,20 +141,130 @@ class GoalEnable(Static):
         self.cur.close()
 
     def compose(self):
-        goalEnableContainer = Container(id="goalSettingEnable")
-        goalEnableContainer.border_title = "Enabled Goals"
-
         self.selectionList = SelectionList(
             *[Selection(goal[1], goal[0], goal[2]) for goal in self.fetch_goals()],
             id="goalEnableList",
         )
         self.selectionList.border_title = "Select which goals to enable."
-
-        with goalEnableContainer:
-            yield self.selectionList
+        yield self.selectionList
 
     def on_selection_list_selected_changed(self, event: SelectionList.SelectedChanged):
         enabledGoals: tuple[tuple[int]] = (
             (goal,) for goal in self.selectionList.selected
         )  # type: ignore
         self.set_enabled_goals(enabledGoals)
+
+
+class GoalEdit(Static):
+    goal: reactive[tuple[str, int]] = reactive(tuple())
+
+    class Updated(Message): ...
+
+    def __init__(self, conn: psycopg.Connection | None):
+        super().__init__()
+        self.conn = conn
+        self.id = "goalSettingEdit"
+        self.border_title = "Edit Goals"
+        self.update_goal()
+
+    def fetch_goals(self) -> list[tuple[int, str, bool]]:
+        if not self.conn:
+            return []
+        return self.conn.execute("SELECT id,name,is_enabled FROM goal_info").fetchall()
+
+    def compose(self):
+        self.contentSwitcher = ContentSwitcher(initial="goalEditBtn")
+        with self.contentSwitcher:
+            with Container(id="goalEditBtn"):
+                yield Button("Add Goal", variant="success", id="goalEditActionAdd")
+                yield Button(
+                    "Update Goal", variant="primary", id="goalEditActionUpdate"
+                )
+                yield Button("Remove Goal", variant="error", id="goalEditActionDelete")
+            with Container(id="goalEditInp"):
+                yield Input(placeholder="Name")
+                yield Button("Add", id="goalEditInpAct", variant="success")
+                yield Button("Back", id="goalEditInpBack", variant="error")
+            with Container(id="goalEditDel"):
+                yield Select(
+                    self.goal,  # type: ignore
+                    prompt="Select Goal",
+                )
+                yield Button("Delete Goal", variant="error", id="goalEditDelBtn")
+                yield Button("Back", id="goalEditDelBack")
+            with Container(id="goalEditUpd"):
+                yield Select(
+                    self.goal,  # type: ignore
+                    prompt="Select Goal",
+                    id="goalEditUpdSel",
+                )
+                yield Input(id="goalEditUptInp", placeholder="Name")
+                yield Button("Update", variant="primary", id="goalEditUptBtn")
+                yield Button("Back", id="goalEditUpdBack")
+
+    def set_goal_inp(self):
+        self.contentSwitcher.current = "goalEditInp"
+        self.app.set_focus(self.query_one("#goalEditInp Input", expect_type=Input))
+
+    def add_goal_db(self, goal: str):
+        if not self.conn:
+            return
+        cur = self.conn.cursor()
+        cur.execute("INSERT INTO goal_info(name) VALUES (%s)", (goal,))
+        self.conn.commit()
+        cur.close()
+
+    def delete_goal_db(self, goalId: int):
+        if not self.conn:
+            return
+        cur = self.conn.cursor()
+        cur.execute("DELETE FROM goal_info WHERE id=(%s)", (goalId,))
+        self.conn.commit()
+        cur.close()
+
+    def watch_goal(self):
+        for select in self.query(Select):
+            select.set_options(self.goal)  # type: ignore
+
+    def update_goal(self):
+        self.goal = ((goal[1], goal[0]) for goal in self.fetch_goals())  # type: ignore
+
+    async def on_button_pressed(self, event: Button.Pressed):
+        if event.button.id == "goalEditActionAdd":
+            self.set_goal_inp()
+        elif event.button.id == "goalEditActionUpdate":
+            self.contentSwitcher.current = "goalEditUpd"
+        elif event.button.id == "goalEditActionDelete":
+            self.contentSwitcher.current = "goalEditDel"
+            self.app.set_focus(self.query_one("#goalEditDel Select"))
+
+        elif event.button.id == "goalEditInpAct":
+            self.add_goal_db(
+                self.query_one("#goalEditInp Input", expect_type=Input).value
+            )
+            self.post_message(self.Updated())
+            self.contentSwitcher.current = "goalEditBtn"
+            self.app.set_focus(self.query_one("#goalEditBtn Button"))
+            self.update_goal()
+        elif event.button.id == "goalEditDelBtn":
+            select = self.query_one("#goalEditDel Select", Select)
+            if select.is_blank():
+                self.notify(
+                    message="Please select a goal to delete",
+                    title="No goal selected for deletion",
+                    severity="error",
+                    timeout=3,
+                )
+            else:
+                self.delete_goal_db(select.value)  # type: ignore
+                self.post_message(self.Updated())
+                self.contentSwitcher.current = "goalEditBtn"
+                self.app.set_focus(self.query_one("#goalEditBtn Button"))
+                self.update_goal()
+        elif (
+            event.button.id == "goalEditInpBack"
+            or event.button.id == "goalEditDelBack"
+            or event.button.id == "goalEditUpdBack"
+        ):
+            self.contentSwitcher.current = "goalEditBtn"
+            self.app.set_focus(self.query_one("#goalEditBtn Button"))

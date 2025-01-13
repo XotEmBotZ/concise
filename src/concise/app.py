@@ -71,11 +71,6 @@ class Main(Base):
         self.tabs = TabbedContent()
         with self.tabs:
             yield TabPane(
-                "Goal",
-                Settings(self.config, self.conn),
-                id="goalTab",
-            )
-            yield TabPane(
                 "Settings",
                 Settings(self.config, self.conn),
                 id="settingsTab",
@@ -89,7 +84,6 @@ class Main(Base):
         self.mutate_reactive(Main.config)
 
     def watch_config(self, old_config, new_config):
-        self.log(old_config)
         dump_config(new_config, self.filename)
         url: str = new_config.get("database", {}).get("url", "")
         if url != self.get_conn_url() and url:

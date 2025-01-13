@@ -13,8 +13,27 @@
     margin: 1;
 }
 
-#goalSettingEnable {
-    border: solid $secondary;
+GoalSetting {
+    layout: grid;
+    grid-size: 2 1;
+    grid-columns: 4fr 1fr;
+    /* grid-rows: 1fr; */
     height: auto;
+}
+
+GoalEnable,
+GoalEdit {
+    border: solid $secondary;
     padding: 1;
+    height: 100%;
+}
+
+GoalEdit Container {
+    height: auto;
+    layout: grid;
+    grid-gutter: 1
+}
+
+GoalEdit Container * {
+    width: 100%;
 }
