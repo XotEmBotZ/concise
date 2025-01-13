@@ -154,7 +154,7 @@ class GoalEnable(Static):
 
 
 class GoalEdit(Static):
-    goal: reactive[tuple[str, int]] = reactive(tuple())
+    goal: reactive[list[tuple[str, int]]] = reactive(list(tuple()))
 
     class Updated(Message): ...
 
@@ -220,12 +220,27 @@ class GoalEdit(Static):
         self.conn.commit()
         cur.close()
 
+    def update_goal_name_db(self, goalId: int, name: str):
+        if not self.conn:
+            return
+        cur = self.conn.cursor()
+        cur.execute("UPDATE goal_info SET name=%s WHERE id=(%s)", (name, goalId))
+        self.conn.commit()
+        cur.close()
+
     def watch_goal(self):
         for select in self.query(Select):
-            select.set_options(self.goal)  # type: ignore
+            select.set_options(self.goal)
+            self.log(f"Found it {select._options},{list(self.goal)}")
 
     def update_goal(self):
-        self.goal = ((goal[1], goal[0]) for goal in self.fetch_goals())  # type: ignore
+        self.goal = [(goal[1], goal[0]) for goal in self.fetch_goals()]
+
+    def on_select_changed(self, event: Select.Changed):
+        if event.select.id == "goalEditUpdSel" and not event.select.is_blank():
+            self.query_one("#goalEditUptInp", Input).value = [
+                goalName for goalName, id in self.goal if id == event.select.value
+            ][0]
 
     async def on_button_pressed(self, event: Button.Pressed):
         if event.button.id == "goalEditActionAdd":
@@ -256,6 +271,22 @@ class GoalEdit(Static):
                 )
             else:
                 self.delete_goal_db(select.value)  # type: ignore
+                self.post_message(self.Updated())
+                self.contentSwitcher.current = "goalEditBtn"
+                self.app.set_focus(self.query_one("#goalEditBtn Button"))
+                self.update_goal()
+        elif event.button.id == "goalEditUptBtn":
+            select = self.query_one("#goalEditUpdSel", Select)
+            name = self.query_one("#goalEditUptInp", Input)
+            if select.is_blank():
+                self.notify(
+                    message="Please select a goal to update",
+                    title="No goal selected for updation",
+                    severity="error",
+                    timeout=3,
+                )
+            else:
+                self.update_goal_name_db(select.value, name.value)  # type: ignore
                 self.post_message(self.Updated())
                 self.contentSwitcher.current = "goalEditBtn"
                 self.app.set_focus(self.query_one("#goalEditBtn Button"))
